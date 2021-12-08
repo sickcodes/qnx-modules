@@ -3,7 +3,7 @@
 # Makefile for the linux qnx4-filesystem routines.
 # ... as kernel modules
 
-ccflags-y += -I$(src) -Wno-int-conversion -DDEBUG -DCONFIG_QNX6FS_FS=y
+ccflags-y += -I$(src) -DCONFIG_QNX6FS_FS=y
 
 obj-m := qnx6.o
 qnx6-objs := inode.o dir.o namei.o super_mmi.o
