@@ -3,32 +3,88 @@ QNX FileSystem Kernel Modules (qnx-modules-dkms)
 
 This project installs qnx4 and qnx6 filesystem types as kernel modules.
 
-Available on the AUR QNX Modules DKMS
+Available on the AUR QNX Modules DKMS: [https://aur.archlinux.org/packages/qnx-modules-dkms/](https://aur.archlinux.org/packages/qnx-modules-dkms/)
 
-```bash
-git clone https://github.com/sickcodes/qnx-modules-dkms.git
-cd qnx-modules-dkms
+AUR PKGBUILD: [https://github.com/sickcodes/aur/tree/master/qnx-modules-dkms](https://github.com/sickcodes/aur/tree/master/qnx-modules-dkms)
 
-cd ./qnx4
-make
-cd ..
+```PKGBUILD
+# Maintainer: Sick Codes <info at sick dot codes>
 
+pkgname=qnx-modules-dkms
+_pkgname=${pkgname%-*}
+pkgver=r9.11df204
+arch="$(uname -r)"
+url='https://github.com/sickcodes/qnx-modules'
+pkgrel=1
+pkgdesc='QNX4 and QNX6 FileSystem Types as Kernel Modules (dkms). BlackBerry qnxfs compatible.'
+arch=('x86_64' 'aarch64' 'i386')
+license=('GPL3')
+provides=("${_pkgname}")
+depends=('dkms')
+makedepends=('git')
+source=("git+${url}.git"#commit=11df204f32640c7d5ea402f3afd828a085504a3a)
+sha256sums=('SKIP')
 
-cd ./qnx6
-make
-cd ..
+pkgver() {
+  cd "${_pkgname}"
+  printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
 
-mkdir -p /usr/src/qnx4/
-mkdir -p /usr/src/qnx6/
+# prepare() {
+#   cd "${srcdir}/${_pkgname}"
+# }
 
-cp -r ./qnx4/* /usr/src/qnx4/
-cp -r ./qnx6/* /usr/src/qnx6/
+package() {
+  
+  cd "${srcdir}/${_pkgname}"
 
-tee -a /usr/lib/modules-load.d/qnx4.conf <<< qnx4
-tee -a /usr/lib/modules-load.d/qnx6.conf <<< qnx6
+  install -Ddm755 "${pkgdir}/usr/src/qnx4-${pkgver}/"
+  install -Ddm755 "${pkgdir}/usr/src/qnx6-${pkgver}/"
 
+  cp -dr --preserve=ownership "${srcdir}/${_pkgname}/qnx4/"* "${pkgdir}/usr/src/qnx4-${pkgver}/"
+  cp -dr --preserve=ownership "${srcdir}/${_pkgname}/qnx6/"* "${pkgdir}/usr/src/qnx6-${pkgver}/"
+
+  cd "${srcdir}/${_pkgname}/qnx4"
+  make
+  make DESTDIR="${pkgdir}/usr/src/qnx4-${pkgver}/" install
+
+  cd "${srcdir}/${_pkgname}/qnx6"
+  make
+  make DESTDIR="${pkgdir}/usr/src/qnx6-${pkgver}/" install
+
+  # Set name and version
+  sed -e "s/@_PKGBASE@/qnx4/" \
+      -e "s/@PKGVER@/${pkgver}/" \
+      -i "${pkgdir}/usr/src/qnx4-${pkgver}/dkms.conf"
+
+  sed -e "s/@_PKGBASE@/qnx6/" \
+      -e "s/@PKGVER@/${pkgver}/" \
+         "${pkgdir}/usr/src/qnx6-${pkgver}/dkms.conf"
+
+  echo '** To activate qnx4 and/or qnx6 **
+# $ sudo modprobe qnx4
+# $ sudo modprobe qnx6'
+  
+}
+
+# sudo modprobe qnx4 qnx6
 ```
 
+For non-Arch users:
+
+```bash
+cd qnx6
+make
+sudo insmod qnx6.ko
+cd ..
+cd qnx6
+make
+sudo insmod qnx6.ko
+
+sudo modprobe qnx4 qnx6
+```
+
+This is for Kernel configs without QNX4FS or QNX6 enabled.
 Check if your current kernel has `CONFIG_QNX4FS_FS` or `CONFIG_QNX6FS_FS`, which it most likely will not.
 
 ```bash
